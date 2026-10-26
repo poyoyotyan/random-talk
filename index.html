@@ -118,19 +118,200 @@ $("#manageList").addEventListener("click",async event=>{
 });
 function renderAll(){renderGenres();renderSelect();renderManage()}
 function draw(){let choices=data.filter(t=>t.category===selected);$("#topicLabel").textContent=selected;if(!choices.length){$("#topic").textContent="このジャンルにはまだ話題がありません。下から追加してください。";$("#counter").textContent="話題 0 件";lastId=null;return}let pool=choices.filter(t=>t.id!==lastId);if(!pool.length)pool=choices;let t=pool[Math.floor(Math.random()*pool.length)];lastId=t.id;$("#topic").textContent=t.text;$("#counter").textContent=`${selected}・話題 ${choices.length} 件`}
-async function refresh(){const [{data:topics,error:tErr},{data:cats,error:cErr}]=await Promise.all([db.from("topics").select("*").order("created_at"),db.from("categories").select("*").order("created_at")]);if(tErr||cErr)throw(tErr||cErr);data=(topics||[]).filter(t=>t&&t.id!=null&&typeof t.category==="string"&&typeof t.text==="string");let custom=(cats||[]).filter(c=>c&&typeof c.name==="string").map(c=>({name:c.name,icon:c.icon||"💡",cls:c.cls||"g8"}));categories=[...defaults.filter(d=>!custom.some(c=>c.name===d.name)),...custom];if(!categories.some(c=>c.name===selected))selected=categories[0]?.name||"大学生活";renderAll();draw()}
-$("#draw").onclick=draw;$("#toggleManage").onclick=()=>$("#manager").classList.toggle("hidden");
-$("#cancelEdit").onclick=()=>{editingId=null;$("#newTopic").value="";$("#newCategory").value="";$("#addTopic").textContent="＋ 話題を追加";$("#cancelEdit").classList.add("hidden")};
-$("#copy").onclick=async()=>{try{await navigator.clipboard.writeText($("#topic").textContent);$("#copy").textContent="コピーしました";setTimeout(()=>$("#copy").textContent="話題をコピー",1200)}catch(e){alert("コピーできませんでした。話題を長押ししてコピーしてください。")}};
-$("#addTopic").onclick=async()=>{let catNew=$("#newCategory").value.trim(),cat=catNew||$("#category").value,text=$("#newTopic").value.trim();if(!text){alert("話題を入力してください。");return}if(!db){alert("データベースに接続できていないため保存できません。");return}try{
-if(catNew&&!categories.some(c=>c.name===cat)){const {error}=await db.from("categories").insert({name:cat,icon:"💡",cls:"g8"});if(error&&error.code!=="23505")throw error}
-if(editingId!==null){const {error}=await db.from("topics").update({category:cat,text}).eq("id",editingId);if(error)throw error;editingId=null;$("#addTopic").textContent="＋ 話題を追加";$("#cancelEdit").classList.add("hidden")}else{const {error}=await db.from("topics").insert({category:cat,text});if(error)throw error}
-selected=cat;$("#newCategory").value="";$("#newTopic").value="";await refresh()
-}catch(e){console.error(e);alert("保存できませんでした。ネット接続、Supabaseの設定、データベース権限を確認してください。")}};
-async function init(){renderAll();if(SUPABASE_URL.startsWith("YOUR_")||SUPABASE_ANON_KEY.startsWith("YOUR_")){setStatus("公開設定が必要です。READMEの手順で共有データベースを設定してください。",true);data=seed.map(([category,text])=>({id:uid(),category,text}));renderAll();draw();$("#addTopic").disabled=true;$("#addTopic").title="Supabase設定後に使えます";return}
-db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-try{const {count,error}=await db.from("topics").select("*",{count:"exact",head:true});if(error)throw error;if(count===0){const {error:ce}=await db.from("categories").upsert(defaults.map(c=>({name:c.name,icon:c.icon,cls:c.cls})),{onConflict:"name",ignoreDuplicates:true});if(ce)throw ce;const {error:te}=await db.from("topics").insert(seed.map(([category,text])=>({category,text})));if(te)throw te}await refresh();setStatus("● 共有データベースに接続中。追加した話題は全員に反映されます。");
-db.channel("shared-topics").on("postgres_changes",{event:"*",schema:"public",table:"topics"},()=>refresh().catch(console.error)).on("postgres_changes",{event:"*",schema:"public",table:"categories"},()=>refresh().catch(console.error)).subscribe();
-}catch(e){console.error(e);setStatus("共有データベースに接続できません。READMEの設定を確認してください。",true);data=seed.map(([category,text])=>({id:uid(),category,text}));renderAll();draw();$("#addTopic").disabled=true}}
+
+async function refresh(){
+  const [{data:topics,error:tErr},{data:cats,error:cErr}]=await Promise.all([
+    db.from("topics").select("*").order("created_at"),
+    db.from("categories").select("*").order("created_at")
+  ]);
+  if(tErr||cErr)throw(tErr||cErr);
+
+  const nextData=(topics||[]).filter(t=>
+    t&&t.id!=null&&typeof t.category==="string"&&typeof t.text==="string"
+  );
+  const custom=(cats||[])
+    .filter(c=>c&&typeof c.name==="string")
+    .map(c=>({name:c.name,icon:c.icon||"💡",cls:c.cls||"g8"}));
+  const nextCategories=[
+    ...defaults.filter(d=>!custom.some(c=>c.name===d.name)),
+    ...custom
+  ];
+
+  const changed=
+    JSON.stringify(nextData)!==JSON.stringify(data)||
+    JSON.stringify(nextCategories)!==JSON.stringify(categories);
+
+  if(!changed)return;
+
+  data=nextData;
+  categories=nextCategories;
+  if(!categories.some(c=>c.name===selected)){
+    selected=categories[0]?.name||"大学生活";
+  }
+  renderAll();
+
+  const current=data.find(
+    t=>String(t.id)===String(lastId)&&t.category===selected
+  );
+  if(current){
+    $("#topicLabel").textContent=selected;
+    $("#topic").textContent=current.text;
+    $("#counter").textContent=
+      `${selected}・話題 ${data.filter(t=>t.category===selected).length} 件`;
+  }else{
+    draw();
+  }
+}
+
+$("#draw").onclick=draw;
+$("#toggleManage").onclick=()=>$("#manager").classList.toggle("hidden");
+
+$("#cancelEdit").onclick=()=>{
+  editingId=null;
+  $("#newTopic").value="";
+  $("#newCategory").value="";
+  $("#addTopic").textContent="＋ 話題を追加";
+  $("#cancelEdit").classList.add("hidden");
+};
+
+$("#copy").onclick=async()=>{
+  try{
+    await navigator.clipboard.writeText($("#topic").textContent);
+    $("#copy").textContent="コピーしました";
+    setTimeout(()=>$("#copy").textContent="話題をコピー",1200);
+  }catch(e){
+    alert("コピーできませんでした。話題を長押ししてコピーしてください。");
+  }
+};
+
+$("#addTopic").onclick=async()=>{
+  let catNew=$("#newCategory").value.trim();
+  let cat=catNew||$("#category").value;
+  let text=$("#newTopic").value.trim();
+
+  if(!text){
+    alert("話題を入力してください。");
+    return;
+  }
+  if(!db){
+    alert("データベースに接続できていないため保存できません。");
+    return;
+  }
+
+  try{
+    if(catNew&&!categories.some(c=>c.name===cat)){
+      const {error}=await db.from("categories").insert({
+        name:cat,icon:"💡",cls:"g8"
+      });
+      if(error&&error.code!=="23505")throw error;
+    }
+
+    if(editingId!==null){
+      const {error}=await db.from("topics")
+        .update({category:cat,text})
+        .eq("id",editingId);
+      if(error)throw error;
+
+      editingId=null;
+      $("#addTopic").textContent="＋ 話題を追加";
+      $("#cancelEdit").classList.add("hidden");
+    }else{
+      const {error}=await db.from("topics").insert({category:cat,text});
+      if(error)throw error;
+    }
+
+    selected=cat;
+    $("#newCategory").value="";
+    $("#newTopic").value="";
+    await refresh();
+  }catch(e){
+    console.error(e);
+    alert("保存できませんでした。ネット接続、Supabaseの設定、データベース権限を確認してください。");
+  }
+};
+
+async function init(){
+  renderAll();
+
+  if(SUPABASE_URL.startsWith("YOUR_")||
+     SUPABASE_ANON_KEY.startsWith("YOUR_")){
+    setStatus("公開設定が必要です。READMEの手順で共有データベースを設定してください。",true);
+    data=seed.map(([category,text])=>({id:uid(),category,text}));
+    renderAll();
+    draw();
+    $("#addTopic").disabled=true;
+    $("#addTopic").title="Supabase設定後に使えます";
+    return;
+  }
+
+  db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+  try{
+    const {count,error}=await db.from("topics")
+      .select("*",{count:"exact",head:true});
+    if(error)throw error;
+
+    if(count===0){
+      const {error:ce}=await db.from("categories").upsert(
+        defaults.map(c=>({name:c.name,icon:c.icon,cls:c.cls})),
+        {onConflict:"name",ignoreDuplicates:true}
+      );
+      if(ce)throw ce;
+
+      const {error:te}=await db.from("topics").insert(
+        seed.map(([category,text])=>({category,text}))
+      );
+      if(te)throw te;
+    }
+
+    await refresh();
+    setStatus("● 共有データベースに接続中。追加した話題は全員に反映されます。");
+
+    const channel=db.channel("shared-topics")
+      .on("postgres_changes",{
+        event:"*",schema:"public",table:"topics"
+      },()=>{
+        refresh().catch(console.error);
+      })
+      .on("postgres_changes",{
+        event:"*",schema:"public",table:"categories"
+      },()=>{
+        refresh().catch(console.error);
+      })
+      .subscribe(status=>{
+        console.log("リアルタイム同期状態:",status);
+        if(status==="SUBSCRIBED"){
+          setStatus("● リアルタイム同期に接続しました");
+        }else if(
+          status==="CHANNEL_ERROR"||
+          status==="TIMED_OUT"||
+          status==="CLOSED"
+        ){
+          setStatus("● 自動同期で更新を確認しています",true);
+        }
+      });
+
+    // リアルタイム通知が届かなくても3秒ごとに更新を確認
+    const syncTimer=setInterval(()=>{
+      refresh().catch(console.error);
+    },3000);
+
+    // ページを離れるときに同期処理を解除
+    window.addEventListener("pagehide",()=>{
+      clearInterval(syncTimer);
+      db.removeChannel(channel);
+    },{once:true});
+
+  }catch(e){
+    console.error(e);
+    setStatus("共有データベースに接続できません。READMEの設定を確認してください。",true);
+    data=seed.map(([category,text])=>({id:uid(),category,text}));
+    renderAll();
+    draw();
+    $("#addTopic").disabled=true;
+  }
+}
+
 init();
+
 </script></body></html>
