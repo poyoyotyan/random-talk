@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101522">
+<title>ランダムトーク</title>
+<style>
+:root{color-scheme:dark;--bg:#101522;--panel:#192235;--text:#f4f6fb;--muted:#aab5ca;--line:#303d55}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#1b2942 0,#101522 48%);color:var(--text);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+main{width:min(760px,100%);margin:auto;padding:22px 16px 44px}header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:8px}h1{font-size:clamp(25px,6vw,34px);margin:0}.sub{color:var(--muted);margin:8px 0 22px;line-height:1.7}
+.pill{font-size:12px;color:#dce8ff;background:#263957;border:1px solid #3b5275;padding:6px 10px;border-radius:99px;white-space:nowrap}
+h2{font-size:16px;margin:22px 0 11px;color:#e1e8f5}.genres{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.genre{border:1px solid transparent;border-radius:15px;min-height:56px;padding:12px 14px;color:#fff;font-size:15px;font-weight:700;text-align:left;display:flex;align-items:center;gap:10px;cursor:pointer}.genre:active{transform:scale(.98)}.genre.active{border-color:#fff;box-shadow:0 0 0 2px #ffffff25}
+.emoji{font-size:21px}.g1{background:linear-gradient(135deg,#2369c9,#398ee6)}.g2{background:linear-gradient(135deg,#7855b7,#a17be0)}.g3{background:linear-gradient(135deg,#bf456c,#ed6b89)}.g4{background:linear-gradient(135deg,#c46b35,#f0a24d)}.g5{background:linear-gradient(135deg,#278e77,#53bd96)}.g6{background:linear-gradient(135deg,#a98527,#e1bd51)}.g7{background:linear-gradient(135deg,#16849a,#39b6c2)}.g8{background:linear-gradient(135deg,#4b5b73,#73839c)}
+.topic-card{margin-top:18px;padding:24px 20px 20px;border:1px solid #2a3952;border-radius:22px;background:linear-gradient(145deg,#1b2941,#141c2d);text-align:center;min-height:220px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:15px}
+.topic-label{font-size:12px;font-weight:800;letter-spacing:.08em;background:#2b69b5;color:#fff;padding:6px 12px;border-radius:99px}.topic{font-size:clamp(22px,5.6vw,31px);font-weight:750;line-height:1.55;overflow-wrap:anywhere;max-width:600px}.hint{font-size:12px;color:var(--muted)}
+.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:4px}button{font:inherit}.primary,.secondary,.smallbtn{border:0;border-radius:13px;padding:13px 17px;font-weight:750;cursor:pointer}.primary{background:#78a9ff;color:#101827;min-width:155px}.secondary{background:#293750;color:#f3f6fc;border:1px solid #3a4a66}.smallbtn{padding:9px 12px;background:#26344a;color:#e9eef8;border:1px solid #394a64;font-size:13px}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #9dc2ff;outline-offset:2px}
+.panel{margin-top:24px;padding:17px;border:1px solid var(--line);border-radius:18px;background:#151e2e}.panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.panel h2{margin:0}
+.formgrid{display:grid;grid-template-columns:1fr 1.5fr;gap:10px;margin-top:14px}input,select,textarea{width:100%;background:#0f1726;border:1px solid #394860;border-radius:11px;color:var(--text);padding:12px;font:inherit;min-width:0}textarea{min-height:80px;resize:vertical}.formrow{display:grid;gap:7px;margin-top:12px}.formrow label{font-size:13px;color:var(--muted)}
+.form-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}.manage-list{display:grid;gap:8px;margin-top:14px}.item{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;padding:11px 12px;background:#1c283b;border-radius:11px}.item-text{line-height:1.5;overflow-wrap:anywhere}.item-meta{font-size:12px;color:var(--muted);margin-bottom:3px}.item-buttons{display:flex;gap:6px;flex-shrink:0}.hidden{display:none!important}.footer{font-size:12px;color:var(--muted);text-align:center;margin:20px 0 0;line-height:1.7}.status{font-size:12px;color:#b9d7ff;margin-top:8px}.warn{color:#ffd48b}
+@media(min-width:600px){.genres{grid-template-columns:repeat(4,minmax(0,1fr))}.genre{min-height:76px;flex-direction:column;justify-content:center;text-align:center;gap:5px}.topic-card{padding:30px}}@media(max-width:360px){main{padding:16px 12px 30px}.genre{font-size:13px;padding:10px}.emoji{font-size:18px}.formgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body><main>
+<header><h1>💬 ランダムトーク</h1><span class="pill">SHARED TALK</span></header>
+<p class="sub">ジャンルを選んで、話題をひとつ引こう。大学でも、集まりでも。</p>
+<div id="connection" class="status">共有データベースに接続しています…</div>
+<h2>話したいジャンルを選ぶ</h2><div id="genres" class="genres"></div>
+<section class="topic-card" aria-live="polite"><div id="topicLabel" class="topic-label">大学生活</div><div id="topic" class="topic">最近、大学生活で楽しみにしていることは？</div><div id="counter" class="hint">話題を読み込み中</div><div class="actions"><button id="draw" class="primary">🎲 もう一度ひく</button><button id="copy" class="secondary">話題をコピー</button></div></section>
+<section class="panel"><div class="panel-head"><h2>⚙️ 話題をカスタマイズ</h2><button id="toggleManage" class="smallbtn">開く / 閉じる</button></div>
+<div id="manager" class="hidden"><p class="sub" style="margin:10px 0 0;font-size:13px">ここで追加した話題は、共有データベースに保存され、全員に表示されます。</p>
+<div class="formgrid"><div class="formrow"><label for="category">ジャンル</label><select id="category"></select></div><div class="formrow"><label for="newCategory">新しいジャンル（任意）</label><input id="newCategory" placeholder="例：旅行、授業、趣味"></div></div>
+<div class="formrow"><label for="newTopic">話題</label><textarea id="newTopic" placeholder="例：大学生活で一度やってみたいことは？"></textarea></div>
+<div class="form-actions"><button id="addTopic" class="primary">＋ 話題を追加</button></div><div id="manageList" class="manage-list"></div>
+</div></section><p class="footer">話題は参加者全員で共有されます。編集・削除も全員の画面に反映されます。</p>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* GitHub Pages公開前に README の手順に沿って2項目を設定してください */
+const SUPABASE_URL = "sb_publishable_Fa_KPj8CDBG9FY5AmfnNBA_bXRTOdlf";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imx6c3ZvdXloemZxbnl0aXVxcndqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI0NzExNDQsImV4cCI6MjEwODA0NzE0NH0.OuJSV877CRbHNyQKNex_6RbHmiiZ4ym-RrXl-T_a_XU";
+const defaults=[{name:"大学生活",icon:"🎓",cls:"g1"},{name:"日常",icon:"☀️",cls:"g2"},{name:"価値観",icon:"✦",cls:"g3"},{name:"将来・仕事",icon:"🧭",cls:"g4"},{name:"趣味",icon:"💬",cls:"g5"},{name:"食べ物",icon:"🍜",cls:"g6"},{name:"人間関係",icon:"🤝",cls:"g7"},{name:"その他",icon:"•••",cls:"g8"}];
+const seed=[
+["大学生活","最近、大学生活で楽しみにしていることは？"],["大学生活","大学で一番印象に残っている授業は？"],["大学生活","大学に入ってから新しく始めたことは？"],["大学生活","空きコマができたら何をして過ごす？"],["大学生活","大学生活で一度やってみたいことは？"],["大学生活","学生のうちに経験しておきたいことは？"],
+["日常","最近ちょっと嬉しかったことは？"],["日常","休日が丸一日空いたら何をする？"],["日常","最近買ってよかったものは？"],["日常","朝型と夜型、どちらが合っている？"],["日常","最近気になって調べたことは？"],["日常","子どもの頃に夢中だったことは？"],
+["価値観","時間とお金、今ほしいのはどちら？"],["価値観","自分の中で大切にしている習慣は？"],["価値観","どんな人を尊敬する？"],["価値観","今までの考え方が変わった経験はある？"],["価値観","一日だけ別の人になれるなら何をしてみたい？"],
+["将来・仕事","将来やってみたいことは？"],["将来・仕事","働くうえで大切にしたいことは？"],["将来・仕事","今、身につけたいスキルは？"],["将来・仕事","理想の働き方はどんな感じ？"],
+["趣味","最近興味を持っていることは？"],["趣味","時間を忘れて夢中になれることは？"],["趣味","人におすすめしたいものは？"],["趣味","いつか挑戦してみたい趣味は？"],
+["食べ物","好きな食べ物をひとつ選ぶなら？"],["食べ物","ずっと食べ続けても飽きないものは？"],["食べ物","好きなコンビニ商品は？"],["食べ物","一度は本場で食べてみたい料理は？"],
+["人間関係","初対面の人と話すとき、何を話題にする？"],["人間関係","友達と出かけるなら計画派？その場で決める派？"],["人間関係","人から言われて嬉しかった言葉は？"],["人間関係","友達と仲良くなるきっかけは何が多い？"],
+["その他","一度だけ挑戦してみたいことは？"],["その他","無人島にひとつだけ持っていくなら？"],["その他","自分のちょっとした特技は？"],["その他","過去の自分にひとつ伝えるなら？"]
+];
+let categories=defaults.map(x=>({...x})),data=[],selected="大学生活",lastId=null,editingId=null,db=null;
+const $=s=>document.querySelector(s);
+function uid(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36)}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+function iconFor(n){return categories.find(c=>c.name===n)?.icon||"💡"}
+function clsFor(n){return categories.find(c=>c.name===n)?.cls||"g8"}
+function setStatus(t,warning=false){$("#connection").textContent=t;$("#connection").className="status"+(warning?" warn":"")}
+function renderGenres(){let el=$("#genres");el.innerHTML="";categories.forEach(c=>{let b=document.createElement("button");b.className="genre "+c.cls+(selected===c.name?" active":"");b.innerHTML=`<span class="emoji">${esc(c.icon)}</span><span>${esc(c.name)}</span>`;b.onclick=()=>{selected=c.name;renderAll();draw()};el.appendChild(b)})}
+function renderSelect(){let s=$("#category"),old=s.value;s.innerHTML=categories.map(c=>`<option value="${esc(c.name)}">${esc(c.name)}</option>`).join("");if(categories.some(c=>c.name===old))s.value=old}
+function renderManage(){let el=$("#manageList");el.innerHTML="";[...data].sort((a,b)=>a.category.localeCompare(b.category,"ja")).forEach(t=>{let d=document.createElement("div");d.className="item";d.innerHTML=`<div class="item-text"><div class="item-meta">${esc(iconFor(t.category))} ${esc(t.category)}</div><div>${esc(t.text)}</div></div><div class="item-buttons"><button class="smallbtn" data-edit="${t.id}">編集</button><button class="smallbtn" data-del="${t.id}">削除</button></div>`;el.appendChild(d)});el.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{let t=data.find(x=>x.id===b.dataset.edit);editingId=t.id;$("#category").value=t.category;$("#newTopic").value=t.text;$("#addTopic").textContent="変更を保存";$("#newTopic").focus()});el.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{let t=data.find(x=>x.id===b.dataset.del);if(!confirm(`この話題を削除しますか？\n「${t.text}」`))return;try{const {error}=await db.from("topics").delete().eq("id",t.id);if(error)throw error;await refresh();}catch(e){alert("削除できませんでした。接続設定と権限を確認してください。")}})}
+function renderAll(){renderGenres();renderSelect();renderManage()}
+function draw(){let choices=data.filter(t=>t.category===selected);$("#topicLabel").textContent=selected;if(!choices.length){$("#topic").textContent="このジャンルにはまだ話題がありません。下から追加してください。";$("#counter").textContent="話題 0 件";lastId=null;return}let pool=choices.filter(t=>t.id!==lastId);if(!pool.length)pool=choices;let t=pool[Math.floor(Math.random()*pool.length)];lastId=t.id;$("#topic").textContent=t.text;$("#counter").textContent=`${selected}・話題 ${choices.length} 件`}
+async function refresh(){const [{data:topics,error:tErr},{data:cats,error:cErr}]=await Promise.all([db.from("topics").select("*").order("created_at"),db.from("categories").select("*").order("created_at")]);if(tErr||cErr)throw(tErr||cErr);data=topics;let custom=cats.map(c=>({name:c.name,icon:c.icon||"💡",cls:c.cls||"g8"}));categories=[...defaults.filter(d=>!custom.some(c=>c.name===d.name)),...custom];if(!categories.some(c=>c.name===selected))selected=categories[0]?.name||"大学生活";renderAll();draw()}
+$("#draw").onclick=draw;$("#toggleManage").onclick=()=>$("#manager").classList.toggle("hidden");
+$("#copy").onclick=async()=>{try{await navigator.clipboard.writeText($("#topic").textContent);$("#copy").textContent="コピーしました";setTimeout(()=>$("#copy").textContent="話題をコピー",1200)}catch(e){alert("コピーできませんでした。話題を長押ししてコピーしてください。")}};
+$("#addTopic").onclick=async()=>{let catNew=$("#newCategory").value.trim(),cat=catNew||$("#category").value,text=$("#newTopic").value.trim();if(!text){alert("話題を入力してください。");return}try{
+if(catNew&&!categories.some(c=>c.name===cat)){const {error}=await db.from("categories").insert({name:cat,icon:"💡",cls:"g8"});if(error&&error.code!=="23505")throw error}
+if(editingId){const {error}=await db.from("topics").update({category:cat,text}).eq("id",editingId);if(error)throw error;editingId=null;$("#addTopic").textContent="＋ 話題を追加"}else{const {error}=await db.from("topics").insert({category:cat,text});if(error)throw error}
+selected=cat;$("#newCategory").value="";$("#newTopic").value="";await refresh()
+}catch(e){console.error(e);alert("保存できませんでした。ネット接続、Supabaseの設定、データベース権限を確認してください。")}};
+async function init(){renderAll();if(SUPABASE_URL.startsWith("YOUR_")||SUPABASE_ANON_KEY.startsWith("YOUR_")){setStatus("公開設定が必要です。READMEの手順で共有データベースを設定してください。",true);data=seed.map(([category,text])=>({id:uid(),category,text}));renderAll();draw();$("#addTopic").disabled=true;$("#addTopic").title="Supabase設定後に使えます";return}
+db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+try{const {count,error}=await db.from("topics").select("*",{count:"exact",head:true});if(error)throw error;if(count===0){const {error:ce}=await db.from("categories").upsert(defaults.map(c=>({name:c.name,icon:c.icon,cls:c.cls})),{onConflict:"name",ignoreDuplicates:true});if(ce)throw ce;const {error:te}=await db.from("topics").insert(seed.map(([category,text])=>({category,text})));if(te)throw te}await refresh();setStatus("● 共有データベースに接続中。追加した話題は全員に反映されます。");
+db.channel("shared-topics").on("postgres_changes",{event:"*",schema:"public",table:"topics"},()=>refresh().catch(console.error)).on("postgres_changes",{event:"*",schema:"public",table:"categories"},()=>refresh().catch(console.error)).subscribe();
+}catch(e){console.error(e);setStatus("共有データベースに接続できません。READMEの設定を確認してください。",true);data=seed.map(([category,text])=>({id:uid(),category,text}));renderAll();draw();$("#addTopic").disabled=true}}
+init();
+</script></body></html>
